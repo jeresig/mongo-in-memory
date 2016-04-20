@@ -1,5 +1,5 @@
 {
-  "name": "mockgo",
+  "name": "finboxio-mockgo",
   "version": "1.0.3",
   "description": "in memory mocking engine for mongodb",
   "main": "index.js",
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/seriousManual/mockgo.git"
+    "url": "git+https://github.com/finboxio/mockgo.git"
   },
   "keywords": [
     "mongodb",
@@ -19,18 +19,20 @@
     "inmemory",
     "in memory"
   ],
-  "author": "Manuel Ernst <seriousstuff@gmx.de>",
+  "author": "Finbox.io",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/seriousManual/mockgo/issues"
+    "url": "https://github.com/finboxio/mockgo/issues"
   },
-  "homepage": "https://github.com/seriousManual/mockgo#readme",
+  "homepage": "https://github.com/finboxio/mockgo#readme",
   "dependencies": {
     "async": "^1.5.2",
     "debug": "^2.2.0",
     "mongodb": "^2.1.11",
     "mongodb-prebuilt": "^5.0.2",
-    "portfinder": "^1.0.3"
+    "portfinder": "^1.0.3",
+    "rimraf": "^2.5.2",
+    "uid": "0.0.2"
   },
   "engines": {
     "node": ">=4.0"
