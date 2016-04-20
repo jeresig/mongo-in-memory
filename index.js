@@ -38,7 +38,13 @@ const startServer = (callback) => {
                 dbpath: config.dbpath
             },
             auto_shutdown: true
-        }, error => callback(error, config))
+        }, (error) => {
+            if (error === 'EADDRINUSE') {
+                setTimeout(() => startServer(callback), 100)
+                return
+            }
+            callback(error, config)
+        })
     })
 }
 
