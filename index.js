@@ -5,7 +5,13 @@ var async = require('async')
 var portfinder = require('portfinder')
 var mongodb_prebuilt = require('mongodb-prebuilt');
 var mongodb = require('mongodb')
+var uid = require('uid')
+var fs = require('fs')
+var rmrf = require('rimraf')
 var debug = require('debug')('mockgo')
+
+var dbpath = path.join(__dirname, '.data-' + uid())
+var dir = fs.mkdirSync(dbpath)
 
 var connectionCache = {}
 var serverConfig = null
@@ -19,16 +25,17 @@ const startServer = (callback) => {
 
         var config = {
             host: '127.0.0.1',
-            port: port
+            port: port,
+            dbpath: dbpath
         }
 
-        debug('startServer on port %d', port)
+        debug('startServer on port %d with data folder %s', port, dbpath)
         serverEmitter = mongodb_prebuilt.start_server({
             args: {
                 storageEngine: 'ephemeralForTest',
                 bind_ip: config.host,
                 port: config.port,
-                dbpath: path.join(__dirname, './.data')
+                dbpath: config.dbpath
             },
             auto_shutdown: true
         }, error => callback(error, config))
@@ -109,3 +116,7 @@ module.exports = {
     shutDown,
     mongodb: mongodb
 }
+
+process.on('exit', () => {
+    rmrf.sync(dbpath)
+})
