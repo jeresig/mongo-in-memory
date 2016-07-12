@@ -1,4 +1,3 @@
-var async = require('async');
 var expect = require('chai').expect;
 
 var MongoInMemory = require('./');
