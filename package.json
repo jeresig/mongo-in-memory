@@ -1,5 +1,5 @@
 {
-  "name": "giorgio-zamparelli-mongo-in-memory",
+  "name": "mongo-in-memory",
   "version": "0.0.1",
   "description": "mongodb in memory for testing or mocking",
   "main": "index.js",
@@ -21,7 +21,10 @@
     "stubs",
     "tdd"
   ],
-  "author": "Giorgio Zamparelli",
+  "author": { "name" : "Giorgio Zamparelli"
+    , "email" : "giorgio.zamparelli@gmail.com"
+    , "url" : "https://github.com/giorgio-zamparelli"
+  },
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/giorgio-zamparelli/mongo-in-memory/issues"
