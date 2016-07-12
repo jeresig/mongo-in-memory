@@ -58,9 +58,6 @@ The callback returns a config object with attributes host and port.
 ### mongoServerInstance.stop(callback)
 Stops the mongo instance.
 
-### mongoServerInstance.mongodb
-Exposes the version of the official native mongodb driver, gives the possibility to override it.
-
 ## Testing with Mocha
 
 This is an example for a simple test with `mockgo` in mocha.
