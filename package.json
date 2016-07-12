@@ -1,14 +1,14 @@
 {
-  "name": "finboxio-mockgo",
-  "version": "1.0.5",
-  "description": "in memory mocking engine for mongodb",
+  "name": "giorgio-zamparelli-mongo-in-memory",
+  "version": "0.0.1",
+  "description": "mongodb in memory for testing or mocking",
   "main": "index.js",
   "scripts": {
     "test": "mocha test.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/finboxio/mockgo.git"
+    "url": "git+https://github.com/giorgio-zamparelli/mongo-in-memory.git"
   },
   "keywords": [
     "mongodb",
@@ -17,20 +17,18 @@
     "testing",
     "mocking",
     "inmemory",
-    "in memory"
+    "in memory",
+    "stubs",
+    "tdd"
   ],
-  "author": "Finbox.io",
+  "author": "Giorgio Zamparelli",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/finboxio/mockgo/issues"
+    "url": "https://github.com/giorgio-zamparelli/mongo-in-memory/issues"
   },
-  "homepage": "https://github.com/finboxio/mockgo#readme",
+  "homepage": "https://github.com/giorgio-zamparelli/mongo-in-memory#readme",
   "dependencies": {
-    "async": "^1.5.2",
-    "debug": "^2.2.0",
-    "mongodb": "^2.1.11",
     "mongodb-prebuilt": "^4.6.0",
-    "portfinder": "^1.0.3",
     "rimraf": "^2.5.2",
     "uid": "0.0.2"
   },
@@ -39,6 +37,7 @@
   },
   "devDependencies": {
     "chai": "^3.5.0",
-    "mocha": "^2.4.5"
+    "mocha": "^2.4.5",
+    "mongodb": "^2.1.11"
   }
 }

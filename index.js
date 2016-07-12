@@ -1,128 +1,58 @@
-var util = require('util')
-var path = require('path')
+const path = require('path');
 
-var async = require('async')
-var portfinder = require('portfinder')
-var mongodb_prebuilt = require('mongodb-prebuilt');
-var mongodb = require('mongodb')
-var uid = require('uid')
-var fs = require('fs')
-var rmrf = require('rimraf')
-var debug = require('debug')('mockgo')
+const mongodb_prebuilt = require('mongodb-prebuilt');
+const uid = require('uid');
+const fs = require('fs');
+const rmrf = require('rimraf');
 
-var dbpath = path.join(__dirname, '.data-' + uid())
-var dir = fs.mkdirSync(dbpath)
+function MongoInMemory (port) {
 
-var connectionCache = {}
-var serverConfig = null
-var serverEmitter = null
+    this.databasePath = path.join(__dirname, '.data-' + uid());
+    this.serverEventEmitter = null;
+    this.host = '127.0.0.1';
+    this.port = port || 27017;
 
-const startServer = (callback) => {
-    portfinder.getPort((error, port) => {
-        if (error) {
-            return callback(error)
-        }
-
-        var config = {
-            host: '127.0.0.1',
-            port: port,
-            dbpath: dbpath
-        }
-
-        debug('startServer on port %d with data folder %s', port, dbpath)
-        serverEmitter = mongodb_prebuilt.start_server({
-            args: {
-                storageEngine: 'ephemeralForTest',
-                bind_ip: config.host,
-                port: config.port,
-                dbpath: config.dbpath
-            },
-            auto_shutdown: true
-        }, (error) => {
-            if (error === 'EADDRINUSE') {
-                setTimeout(() => startServer(callback), 100)
-                return
-            }
-            callback(error, config)
-        })
-    })
 }
 
-const createConnection = (config, callback) => {
-    var uri = util.format('mongodb://%s:%d/%s',
-        config.host,
-        config.port,
-        config.database
-    )
+MongoInMemory.prototype.start = function (callback) {
 
-    //we add the possibilty to override the version of the mongodb driver
-    //by exposing it via module.exports
-    module.exports.mongodb.connect(uri, callback)
-}
+    fs.mkdirSync(this.databasePath);
 
-const createServerSpecificConfiguration = (serverConfig, dbName, callback) => {
-    debug('creating connection for db "%s"', dbName)
+    this.serverEventEmitter = mongodb_prebuilt.start_server({
 
-    var configCopy = Object.assign({}, serverConfig)
-    configCopy.database = dbName
-    createConnection(configCopy, (error, connection) => {
-        if (error) callback(error)
+        args: {
+            storageEngine: 'ephemeralForTest',
+            bind_ip: this.host,
+            port: this.port,
+            dbpath: this.databasePath
+        },
+        auto_shutdown: true
 
-        connectionCache[dbName] = connection
-        callback(null, connection)
-    })
-}
+    }, (error) => {
 
-const getConnection = (dbName, callback) => {
-    if (typeof dbName === 'function') {
-        callback = dbName
-        dbName = 'testDatabase'
+        callback(error, { 'host' : this.host, 'port' : this.port});
+
+    });
+
+};
+
+MongoInMemory.prototype.getMongouri = function (databaseName) {
+
+    return "mongodb://" + this.host + ":" + this.port + "/" + databaseName;
+
+};
+
+MongoInMemory.prototype.stop = function (callback) {
+
+    if (this.serverEventEmitter) {
+        this.serverEventEmitter.emit('mongoShutdown');
+        this.serverEventEmitter = null;
     }
 
-    var connection = connectionCache[dbName]
-    if (connection) {
-        debug('retrieve connection from connection cache for db "%s"', dbName)
-        return process.nextTick(() => callback(null, connection))
-    }
+    rmrf.sync(this.databasePath);
 
-    if (serverConfig) {
-        return createServerSpecificConfiguration(serverConfig, dbName, callback)
-    }
+    process.nextTick(() => callback(null));
 
-    startServer((error, resultConfiguration) => {
-        if (error) return callback(error)
+};
 
-        serverConfig = resultConfiguration
-        createServerSpecificConfiguration(serverConfig, dbName, callback)
-    })
-}
-
-const shutDown = callback => {
-    if (serverEmitter) {
-        debug('emit shutdown event')
-        serverEmitter.emit('mongoShutdown')
-    }
-
-    serverEmitter = null
-    serverConfig = null
-    connectionCache = {}
-
-    var cons = Object.keys(connectionCache).map(key => connectionCache[key])
-
-    if (cons.length > 0) {
-        debug('closing %d mongo connections', cons.length)
-        async.each(cons, (con, cb) => con.close(cb), callback)
-    } else {
-        process.nextTick(() => callback(null))
-    }
-}
-
-module.exports = {
-    getConnection,
-    shutDown,
-    mongodb: mongodb
-}
-
-process.on('exit', () => {
-    rmrf.sync(dbpath)
-})
+module.exports = MongoInMemory;

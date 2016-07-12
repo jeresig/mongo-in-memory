@@ -1,79 +1,64 @@
-# MOCKGO [![Build Status](https://travis-ci.org/seriousManual/mockgo.png)](https://travis-ci.org/seriousManual/mockgo)
+# MONGO-IN-MEMORY [![Build Status](https://travis-ci.org/giorgio-zamparelli/mongo-in-memory.png)](https://travis-ci.org/giorgio-zamparelli/mongo-in-memory)
 
-Mockgo is a in-memory mocking engine for mongodb.
-In [contrast](https://www.npmjs.com/package/mongo-mock-server) [to](https://www.npmjs.com/package/mock-mongo-db) [existing](https://www.npmjs.com/package/mongo-mock) [solutions](https://www.npmjs.com/package/mongodb-mock) mockgo does not try to imitate the mongodb interface by implementing its methods.
-Instead it uses the same approach [Mockgoose](https://www.npmjs.com/package/mockgoose) uses and spins up a actual mongodb instance which holds the data in memory.
-That way the full feature set of mongodb can be used.
+Spins up a actual mongodb instance programmatically from node for testing or mocking during development.
 
 Works on all platforms which is due to the awesome [mongodb-prebuilt](https://www.npmjs.com/package/mongodb-prebuilt) package.
 
-After spinning up the mongodb instance a connection to that instance is automatically created and returned.
-
 ## Installation
 ````
-npm install mockgo
+npm install mongo-in-memory
 ````
 
 ## Usage
-Require mockgo, then retrieve a connection to the in-memory instance of mongodb by calling `getConnection`.
-An optional database name can be specified.
+Require mongo-in-memory, create an instance and start the server:
 
 ````javascript
-var mockgo = require('mockgo')
+const MongoInMemory = require('mongo-in-memory');
 
-mockgo.getConnection((error, connection) => {
-  //`connection` is the connection to the mongodb instance
-})
-````
+var port = 8000;
+var mongoServerInstance = new MongoInMemory(port); //DEFAULT PORT is 27017
 
-You can retrieve connections to as many databases as you wish.
-They are internally cached.
+mongoServerInstance.start((error, config) => {
 
-## Example
-````javascript
-var mockgo = require('mockgo')
+    if (error) {
+        console.error(error);
+    } else {
 
-mockgo.getConnection('testDatabase', (error, connection) => {
-    var collection = connection.collection('testDataCollection')
+        //callback when server has started successfully
 
-    collection.find({}).toArray((error, result) => {
-        console.log(result); //result: []
+        console.log("HOST " + config.host);
+        console.log("PORT " + config.port);
 
-        collection.insertOne({test: 'data'}, (error, result) => {
-            collection.find({test: 'data'}).toArray((error, result) => {
-                console.log(result); //result: [ { _id: 56f52afef6d8838417df1688, test: 'data' } ]
+        var mongouri = mongoServerInstance.getMongouri("myDatabaseName");
 
-                mockgo.shutDown(() => console.log('shutdown complete'))
-            })
-        })
-    })
-})
+    }
+
+});
+
+mongoServerInstance.stop((error) => {
+
+    if (error) {
+        console.error(error);
+    } else {
+        //callback when server has stopped successfully
+    }
+
+});
 ````
 
 ## Methods and Properties
 
-### mockgo.getConnection([databaseName], callback)
-Returns a connection to a in-memory instance on mongodb.
-If no `databaseName` is specified a dummy name will be used.
-If a connection to the same database is requested multiple times a cached version of the same connection instance is returned.
+### constructor([PORT])
+If no `PORT` is specified the default value is 27017
 
-The connection instance is a instance from the official native [mongodb](https://www.npmjs.com/package/mongodb) driver.
+### mongoServerInstance.start(callback)
+Starts the mongo instance
+The callback returns a config object with attributes host and port.
 
-If you wish to use another version of the mongodb package you can easily override it by setting the `mongodb` property *before* requiring a connection:
+### mongoServerInstance.stop(callback)
+Stops the mongo instance.
 
-````javascript
-var mockgo = require('mockgo')
-var mockgo.mongodb = require('mongodb') //version xyz
-
-mockgo.getConnection((error, result) => {
-    // ...
-})
-````
-
-### mockgo.shutDown(callback)
-Closes all existing mongodb connections and shuts down the mongodb instance.
-
-### mockgo.mongodb
+### mongoServerInstance.mongodb
 Exposes the version of the official native mongodb driver, gives the possibility to override it.
 
 ## Testing with Mocha
@@ -81,30 +66,62 @@ Exposes the version of the official native mongodb driver, gives the possibility
 This is an example for a simple test with `mockgo` in mocha.
 
 ````javascript
-var expect = require('chai').expect
-var mockgo = require('mockgo')
+var async = require('async');
+var expect = require('chai').expect;
 
-var Loader = require('../lib/Loader')
+var MongoInMemory = require('./');
+var mongodb = require('mongodb');
 
-describe('loaderTest', () => {
-    var result, error
+describe('mock-in-memory', function() {
 
-    before(done => {
-        mockgo.getConnection((error, connection) => {
-            expect(error).to.be.null
-            loader = new Loader(connection)
+    this.timeout(0);
 
-            loader.loadSomething((_error, _result) => {
-                error = _error
-                result = _result
-                done()
-            })
+    describe('connect to server', () => {
+
+        var mongoInMemory;
+
+        before(done => {
+
+            mongoInMemory = new MongoInMemory(8000);
+            mongoInMemory.start((error, config) => {
+
+                done();
+
+            });
+
         })
-    })
-    after(done => mockgo.shutdown(done))
 
-    it('should not return a error', () => expect(error).to.be.null)
-    it('should load something', () => expect(result).to.deep.equal({awesome: 'data'})
+        after(done => {
+
+            mongoInMemory.stop((error) => {
+
+                expect(error).to.be.null
+                done()
+
+            });
+
+        })
+
+        it('should open a connection with a dummy database name', done => {
+
+            mongodb.connect(mongoInMemory.getMongouri("testDatabaseName"), function(error, db) {
+
+                if (error) {
+                    console.log(error);
+                } else {
+                    //console.log("Connected correctly to server");
+                }
+
+                db.close();
+
+                done();
+
+            });
+
+        })
+
+    })
+
 })
 
 ````
