@@ -1,6 +1,6 @@
 {
   "name": "mongo-in-memory",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "mongodb in memory for testing or mocking",
   "main": "index.js",
   "scripts": {
@@ -21,9 +21,10 @@
     "stubs",
     "tdd"
   ],
-  "author": { "name" : "Giorgio Zamparelli"
-    , "email" : "giorgio.zamparelli@gmail.com"
-    , "url" : "https://github.com/giorgio-zamparelli"
+  "author": {
+    "name": "Giorgio Zamparelli",
+    "email": "giorgio.zamparelli@gmail.com",
+    "url": "https://github.com/giorgio-zamparelli"
   },
   "license": "MIT",
   "bugs": {
@@ -31,6 +32,7 @@
   },
   "homepage": "https://github.com/giorgio-zamparelli/mongo-in-memory#readme",
   "dependencies": {
+    "mongodb": "^2.2.1",
     "mongodb-prebuilt": "^4.6.0",
     "rimraf": "^2.5.2",
     "uid": "0.0.2"
