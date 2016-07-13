@@ -1,10 +1,10 @@
 {
   "name": "mongo-in-memory",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "mongodb in memory for testing or mocking",
   "main": "index.js",
   "scripts": {
-    "test": "mocha test.js"
+    "test": "./node_modules/mocha/bin/mocha tests"
   },
   "repository": {
     "type": "git",

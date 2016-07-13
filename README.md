@@ -51,12 +51,25 @@ mongoServerInstance.stop((error) => {
 ### constructor([PORT])
 If no `PORT` is specified the default value is 27017
 
-### mongoServerInstance.start(callback)
+### mongoServerInstance.start(function callback (error, config))
 Starts the mongo instance
 The callback returns a config object with attributes host and port.
 
-### mongoServerInstance.stop(callback)
+### mongoServerInstance.stop(function callback (error))
 Stops the mongo instance.
+
+### mongoServerInstance.getMongouri(databaseName)
+Returns a string containing the mongouri to a mongo database.
+This should be called only after successful call to mongoServerInstance.start()
+
+### mongoServerInstance.getConnection(databaseName, function callback (error, connection))
+Returns a connection object from [the official MongoDB driver for Node.js](https://www.npmjs.com/package/mongodb)
+
+### mongoServerInstance.addDocument(databaseName, collectionName, documentObjectToAdd, function callback (error, documentObjectAdded)))
+Adds a document to a collection of a database.
+
+### mongoServerInstance.addDirectoryOfCollections(databaseName, collectionsPath, callback, function callback (error, documentsAdded)))
+Adds an entire directory to the database. The directory must contains sub-directories named after each collection name. Each collection directory must then contain the documents that must be added. Check out the test named addDirectoryOfCollections()  whithin the file [tests/test.js](https://github.com/giorgio-zamparelli/mongo-in-memory/blob/master/tests/test.js).
 
 ## Testing with Mocha
 

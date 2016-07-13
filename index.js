@@ -102,6 +102,49 @@ MongoInMemory.prototype.addDocument = function (databaseName, collection, docume
 
 };
 
+MongoInMemory.prototype.addDirectoryOfCollections = function (databaseName, collectionsPath, callback) {
+
+    this.getConnection(databaseName, (error, connection) => {
+
+        if (error) {
+
+            callback(error, null);
+
+        } else {
+
+            let documentsAdded = [];
+
+            let collections = fs.readdirSync(collectionsPath);
+
+            for (let collection of collections) {
+
+                var collectionPath = collectionsPath + "/" + collection;
+
+                if (fs.lstatSync(collectionPath).isDirectory()) {
+
+                    let filenames = fs.readdirSync(collectionPath);
+
+                    for (let filename of filenames) {
+
+                        var documentPath = collectionPath + "/" + filename;
+                        let document = JSON.parse(fs.readFileSync(documentPath, 'utf8'));
+                        connection.collection(collection).insertOne(document);
+                        documentsAdded.push(collection + "/" + filename);
+
+                    }
+
+                }
+
+            }
+
+            callback(null, documentsAdded);
+
+        }
+
+    });
+
+};
+
 MongoInMemory.prototype.stop = function (callback) {
 
     if (this.serverEventEmitter) {
