@@ -1,12 +1,13 @@
 'use strict';
 
-const path = require('path');
+var path = require('path');
+var nodeify = require('nodeify');
 
-const mongodb_prebuilt = require('mongodb-prebuilt');
-const mongodb = require('mongodb');
-const uid = require('uid');
-const fs = require('fs');
-const rmrf = require('rimraf');
+var mongodb_prebuilt = require('mongodb-prebuilt');
+var mongodb = require('mongodb');
+var uid = require('uid');
+var fs = require('fs');
+var rmrf = require('rimraf');
 
 function MongoInMemory (port) {
 
@@ -20,23 +21,31 @@ function MongoInMemory (port) {
 
 MongoInMemory.prototype.start = function (callback) {
 
-    fs.mkdirSync(this.databasePath);
+	return nodeify(new Promise(function (resolve, reject) {
 
-    this.serverEventEmitter = mongodb_prebuilt.start_server({
+		fs.mkdirSync(this.databasePath);
 
-        args: {
-            storageEngine: 'ephemeralForTest',
-            bind_ip: this.host,
-            port: this.port,
-            dbpath: this.databasePath
-        },
-        auto_shutdown: true
+	    this.serverEventEmitter = mongodb_prebuilt.start_server({
 
-    }, (error) => {
+	        args: {
+	            storageEngine: 'ephemeralForTest',
+	            bind_ip: this.host,
+	            port: this.port,
+	            dbpath: this.databasePath
+	        },
+	        auto_shutdown: true
 
-        callback(error || null, { 'host' : this.host, 'port' : this.port});
+	    }, (error) => {
 
-    });
+			if (error) {
+				reject(error);
+			} else {
+				resolve({'host' : this.host, 'port' : this.port});
+			}
+
+	    });
+
+	}.bind(this)), callback);
 
 };
 
@@ -48,119 +57,143 @@ MongoInMemory.prototype.getMongouri = function (databaseName) {
 
 MongoInMemory.prototype.getConnection = function (databaseName, callback) {
 
-    if (this.connections[databaseName]) {
+	return nodeify(new Promise(function (resolve, reject) {
 
-        callback(null, this.connections[databaseName]);
+	    if (this.connections[databaseName]) {
 
-    } else {
+			resolve(this.connections[databaseName]);
 
-        mongodb.connect(this.getMongouri(databaseName), function(error, connection) {
+	    } else {
 
-            if (!error) {
-                this.connections[databaseName] = connection;
-            }
+	        return mongodb.connect(this.getMongouri(databaseName)).then(function(connection) {
 
-            callback(error, connection);
+				this.connections[databaseName] = connection;
+				resolve(connection);
 
-        }.bind(this));
+	        }.bind(this));
 
-    }
+	    }
+
+	}.bind(this)), callback);
 
 };
 
-MongoInMemory.prototype.addDocument = function (databaseName, collection, document, callback) {
+MongoInMemory.prototype.getCollection = function (databaseName, collection, callback) {
 
-    this.getConnection(databaseName, function (error, connection) {
+	return nodeify(new Promise(function (resolve, reject) {
 
-        if (error) {
+		return this.getConnection(databaseName).then(function (connection) {
 
-            callback(error, null);
+			resolve(connection.collection(collection));
 
-        } else {
+		});
 
-            connection.collection(collection).insertOne(document, function (error, result) {
+	}.bind(this)), callback);
 
-                if (error) {
+};
 
-                    callback(error, null);
+MongoInMemory.prototype.addDocument = function (databaseName, collectionName, document, callback) {
 
-                } else if (result.n === 0) {
+	return nodeify(new Promise(function (resolve, reject) {
 
-                    callback(new Error("no document was actually saved in the database"), null);
+	    return this.getCollection(databaseName, collectionName).then(function (collection) {
 
-                } else {
+			collection.insertOne(document, function (error, result) {
 
-                    callback(null, result.ops[0]);
+				if (error) {
 
-                }
+					reject(error);
 
-            });
+				} else if (result.n === 0) {
 
-        }
+					reject(new Error("no document was actually saved in the database"));
 
-    });
+				} else {
+
+					resolve(result.ops[0]);
+
+				}
+
+			});
+	    });
+
+	}.bind(this)), callback);
+
+};
+
+MongoInMemory.prototype.getDocument = function (databaseName, collectionName, documentId, callback) {
+
+	return nodeify(new Promise(function (resolve, reject) {
+
+		return this.getCollection(databaseName, collectionName).then(function (collection) {
+
+			resolve(collection.findOne({"_id": documentId}));
+
+		});
+
+	}.bind(this)), callback);
 
 };
 
 MongoInMemory.prototype.addDirectoryOfCollections = function (databaseName, collectionsPath, callback) {
 
-    this.getConnection(databaseName, (error, connection) => {
+	return nodeify(new Promise(function (resolve, reject) {
 
-        if (error) {
+	    this.getConnection(databaseName).then(function (connection) {
 
-            callback(error, null);
+			let documentsAdded = [];
 
-        } else {
+			let collections = fs.readdirSync(collectionsPath);
 
-            let documentsAdded = [];
+			for (let collection of collections) {
 
-            let collections = fs.readdirSync(collectionsPath);
+				var collectionPath = collectionsPath + "/" + collection;
 
-            for (let collection of collections) {
+				if (fs.lstatSync(collectionPath).isDirectory()) {
 
-                var collectionPath = collectionsPath + "/" + collection;
+					let filenames = fs.readdirSync(collectionPath);
 
-                if (fs.lstatSync(collectionPath).isDirectory()) {
+					for (let filename of filenames) {
 
-                    let filenames = fs.readdirSync(collectionPath);
+						var documentPath = collectionPath + "/" + filename;
+						let document = JSON.parse(fs.readFileSync(documentPath, 'utf8'));
+						connection.collection(collection).insertOne(document);
+						documentsAdded.push(collection + "/" + filename);
 
-                    for (let filename of filenames) {
+					}
 
-                        var documentPath = collectionPath + "/" + filename;
-                        let document = JSON.parse(fs.readFileSync(documentPath, 'utf8'));
-                        connection.collection(collection).insertOne(document);
-                        documentsAdded.push(collection + "/" + filename);
+				}
 
-                    }
+			}
 
-                }
+			resolve(documentsAdded);
 
-            }
+	    });
 
-            callback(null, documentsAdded);
-
-        }
-
-    });
+	}.bind(this)), callback);
 
 };
 
 MongoInMemory.prototype.stop = function (callback) {
 
-    if (this.serverEventEmitter) {
-        this.serverEventEmitter.emit('mongoShutdown');
-        this.serverEventEmitter = null;
-    }
+	return nodeify(new Promise(function (resolve, reject) {
 
-    Object.keys(this.connections).map(databaseName => {
+	    if (this.serverEventEmitter) {
+	        this.serverEventEmitter.emit('mongoShutdown');
+	        this.serverEventEmitter = null;
+	    }
 
-        this.connections[databaseName].close();
+	    Object.keys(this.connections).map(databaseName => {
 
-    });
+	        this.connections[databaseName].close();
 
-    rmrf.sync(this.databasePath);
+	    });
 
-    process.nextTick(() => callback(null));
+	    rmrf.sync(this.databasePath);
+
+	    process.nextTick(() => resolve(null));
+
+	}.bind(this)), callback);
 
 };
 

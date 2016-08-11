@@ -48,6 +48,8 @@ mongoServerInstance.stop((error) => {
 
 ## Methods and Properties
 
+All methods accept callbacks and return promises too.
+
 ### constructor([PORT])
 If no `PORT` is specified the default value is 27017
 

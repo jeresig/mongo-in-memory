@@ -1,6 +1,5 @@
 'use strict';
 
-const should = require('chai').should();
 const expect = require('chai').expect;
 
 var MongoInMemory = require('./../');
@@ -43,7 +42,7 @@ describe('mock-in-memory', function() {
     it('getMongouri() should return a valid mongouri', () => {
 
         let mongouri = mongoInMemory.getMongouri(databaseName);
-        should.exist(mongouri);
+        expect(mongouri).to.exist;
 
         expect("mongodb://127.0.0.1:" + port + "/" + databaseName).to.be.equal(mongouri);
 
@@ -54,7 +53,22 @@ describe('mock-in-memory', function() {
         mongoInMemory.getConnection(databaseName, function(error, connection) {
 
             expect(error).to.be.null;
-            should.exist(connection);
+            expect(connection).to.exist;
+
+            done();
+
+        });
+
+    })
+
+	it('getCollection() should return a valid mongodb driver connection', done => {
+
+		var collection = "airplanes";
+
+        mongoInMemory.getCollection(databaseName, collection, function(error, collection) {
+
+            expect(error).to.be.null;
+            expect(collection).to.exist;
 
             done();
 
@@ -71,10 +85,17 @@ describe('mock-in-memory', function() {
         mongoInMemory.addDocument(databaseName, collection, document, function(error, documentActual) {
 
             expect(error).to.be.null;
-            should.exist(document);
-            should.exist(document._id);
+            expect(document).to.exist;
+            expect(document._id).to.exist;
 
-            done();
+			mongoInMemory.getDocument(databaseName, collection, document._id, function(error, documentActual) {
+
+				expect(error).to.be.null;
+	            expect(documentActual).to.exist;
+
+				done();
+
+	        });
 
         });
 
@@ -94,18 +115,18 @@ describe('mock-in-memory', function() {
             mongoInMemory.getConnection(databaseName, function(error, connection) {
 
                 expect(error).to.be.null;
-                should.exist(connection);
+                expect(connection).to.exist;
 
                 connection.collection("cars").findOne({"_id" : toyotaPriusBlue._id}, function (error, toyotaPriusBlueActual) {
 
                     expect(error).to.be.null;
-                    should.exist(toyotaPriusBlueActual);
+                    expect(toyotaPriusBlueActual).to.exist;
                     expect(toyotaPriusBlue).to.be.deep.equal(toyotaPriusBlueActual);
 
                     connection.collection("motorbikes").findOne({"_id" : piaggioVespaWhite._id}, function (error, piaggioVespaWhiteActual) {
 
                         expect(error).to.be.null;
-                        should.exist(piaggioVespaWhiteActual);
+                        expect(piaggioVespaWhiteActual).to.exist;
                         expect(piaggioVespaWhite).to.be.deep.equal(piaggioVespaWhiteActual);
 
                         done();
